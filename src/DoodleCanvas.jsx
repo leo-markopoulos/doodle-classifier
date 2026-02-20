@@ -1,6 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 
-export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
+export default function DoodleCanvas({
+  onCanvasReady,
+  onInteractingChange,
+  onStrokeEnd, // NEW: notify parent when a stroke finishes
+}) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
 
@@ -12,7 +16,10 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     canvas.width = 280;
     canvas.height = 280;
@@ -25,26 +32,25 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
 
     ctxRef.current = ctx;
     onCanvasReady?.(canvas);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-  const applyBrush = () => {
+  const applyBrush = useCallback(() => {
     const ctx = ctxRef.current;
     if (!ctx) return;
-
     ctx.lineWidth = brush;
     ctx.strokeStyle = isErasing ? "black" : "white";
-    ctx.globalCompositeOperation = "source-over"; // IMPORTANT
-  };
-
+    ctx.globalCompositeOperation = "source-over"; // IMPORTANT for erasing by drawing black
+  }, [brush, isErasing]);
 
   useEffect(() => {
     applyBrush();
-  }, [brush, isErasing]);
+  }, [applyBrush]);
 
   const getPos = (clientX, clientY) => {
     const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     return {
       x: (clientX - rect.left) * (canvas.width / rect.width),
@@ -77,11 +83,19 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
     lastRef.current = p;
   };
 
-  const endStroke = () => {
+  const endStroke = useCallback(() => {
     if (!drawingRef.current) return;
     drawingRef.current = false;
     onInteractingChange?.(false);
-  };
+    onStrokeEnd?.(); // NEW
+  }, [onInteractingChange, onStrokeEnd]);
+
+  // Ensure mouseup ends stroke even if it happens outside the canvas
+  useEffect(() => {
+    const onWinMouseUp = () => endStroke();
+    window.addEventListener("mouseup", onWinMouseUp);
+    return () => window.removeEventListener("mouseup", onWinMouseUp);
+  }, [endStroke]);
 
   const clear = () => {
     const canvas = canvasRef.current;
@@ -89,6 +103,7 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
     if (!canvas || !ctx) return;
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    onStrokeEnd?.(); // treat clear like a “new state” event (useful for prediction update)
   };
 
   return (
@@ -105,8 +120,7 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
           cursor: "crosshair",
           WebkitUserSelect: "none",
           userSelect: "none",
-          // important for Safari/trackpad so it doesn't scroll/zoom instead
-          touchAction: "none",
+          touchAction: "none", // Safari/trackpad/scroll fix
         }}
         // MOUSE (trackpad behaves like mouse)
         onMouseDown={(e) => {
@@ -115,7 +129,6 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
           startStroke(e.clientX, e.clientY);
         }}
         onMouseMove={(e) => {
-          // Safari trackpad sometimes won’t report buttons reliably; rely on our ref flag
           moveStroke(e.clientX, e.clientY);
         }}
         onMouseUp={(e) => {
@@ -123,7 +136,7 @@ export default function DoodleCanvas({ onCanvasReady, onInteractingChange }) {
           endStroke();
         }}
         onMouseLeave={() => endStroke()}
-        // TOUCH (for phones/ipads)
+        // TOUCH (phones/ipads)
         onTouchStart={(e) => {
           e.preventDefault();
           const t = e.touches[0];
