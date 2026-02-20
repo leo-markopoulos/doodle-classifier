@@ -3,7 +3,7 @@
 A fully client-side handwritten digit classifier built with React, Vite, and TensorFlow.js.  
 Includes real-time prediction and PCA visualization of CNN embeddings.
 
-Live Demo: https://yourusername.github.io/doodle-classifier/
+Live Demo: https://leo-markopoulos.github.io/doodle-classifier/
 
 ---
 
