@@ -1,16 +1,61 @@
-# React + Vite
+# Doodle Digit Classifier (React + TensorFlow.js)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A fully client-side handwritten digit classifier built with React, Vite, and TensorFlow.js.  
+Includes real-time prediction and PCA visualization of CNN embeddings.
 
-Currently, two official plugins are available:
+Live Demo: https://yourusername.github.io/doodle-classifier/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+• Draw digits directly in the browser  
+• Real-time prediction using pretrained CNN  
+• Logistic regression model support  
+• Extracts CNN penultimate-layer embeddings  
+• PCA visualization of learned feature space  
+• Runs entirely client-side (no backend)  
+• GitHub Pages compatible  
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Architecture
+
+Pipeline:
+
+Canvas → Preprocess → CNN → Embedding → PCA → Visualization
+
+Models loaded from:
+
+public/model/pretrained-cnn/
+public/model/logreg/
+
+---
+
+## Embedding Visualization
+
+The CNN penultimate dense layer produces a 128-dimensional embedding vector representing each digit.
+
+PCA reduces this to 2D for visualization.
+
+Similar digits cluster together in embedding space.
+
+This allows direct visualization of neural network feature representations.
+
+---
+
+## Tech Stack
+
+React  
+Vite  
+TensorFlow.js  
+Canvas API  
+Pure client-side ML  
+
+---
+
+## Running locally
+
+```bash
+npm install
+npm run dev
